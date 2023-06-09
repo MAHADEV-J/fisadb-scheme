@@ -44,7 +44,6 @@ Table mothers {
 Table marques {
   id integer [primary key, unique, increment]
   name varchar
-  mother varchar
 }
 
 Table classes {
@@ -67,6 +66,11 @@ Table tracks {
   name varchar
   "long name" varchar
   location varchar
+  lat varchar
+  lon varchar
+  "time zone" enum
+  "dst start" enum
+  "dst end" enum
 }
 
 Table trackconfigs {
@@ -99,7 +103,12 @@ Table calendar {
   track enum
   config integer
   length varchar
+  championships varchar
   "double points" bool
+  date varchar
+  time varchar
+  "average temperature" varchar
+  "average rainfall" varchar
 }
 
 Table teams_seasons {
@@ -123,23 +132,47 @@ Table entries {
   vanityname varchar
   vanitynat enum
   driver enum
-  "pq group" integer
-  "pq time" varchar
-  "q group" integer
-  "q time" varchar
-  "grid pos" integer
-  finish integer
-  gap varchar
+  "pq group" integer [null]
+  "pq time" varchar [null]
+  "pq pos" integer [null]
+  "q group" integer [null]
+  "q time" varchar [null]
+  "q pos" integer [null]
+  "grid pos" integer [null]
+  finish integer [null]
+  gap varchar [null]
 
   indexes {
     (season, category, round, carid, carno) [unique]
   }
 }
 
+Table marques_mothers {
+  marque enum
+  mother enum
+  "first season" varchar
+  "last season" varchar [null]
+
+  indexes {
+    (marque, mother, "first season", "last season") [unique]
+  }
+}
+
+Table weather {
+  track enum
+  date varchar
+  time varchar
+  "average temperature" varchar
+  "average rainfall" varchar
+
+  indexes {
+    (track, date, time) [unique]
+  }
+}
+
 Ref: drivers.id > driverids.id
 Ref: drivers.nationality > countries.name
 Ref: countries.region > regions.name
-Ref: marques.mother > mothers.name
 Ref: trackconfigs.track > tracks.name
 Ref: calendar.season > seasons.name
 Ref: calendar.category > categories.id
@@ -154,3 +187,7 @@ Ref: entries.marque > marques.id
 Ref: entries.team > teams_seasons."team name"
 Ref: entries.vanitynat > countries.name
 Ref: entries.driver > drivers.name
+Ref: marques_mothers.marque > marques.id
+Ref: marques_mothers.mother > mothers.name
+Ref: weather.track > tracks.name
+Ref: calendar.(track, date, time, "average temperature", "average rainfall") - weather.(track, date, time, "average temperature", "average rainfall")
