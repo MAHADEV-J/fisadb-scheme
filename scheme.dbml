@@ -5,15 +5,25 @@ Table regions {
   name varchar [primary key, unique]
 }
 
-Table countries {
+Table countryids {
   id integer [primary key, unique, increment]
+  region enum
+}
+
+Table countries {
+  id enum
   name varchar [unique, note: 'Can change over time']
   "short name" varchar
   abbreviation varchar
   anthem varchar [note: 'tla.mp3']
-  flag varchar [note: 'tla.png']
   capital varchar
-  region enum
+}
+
+Table flags {
+  country enum [unique]
+  flag varchar [unique, note: '*.png, where * = tla optionally followed by year or other specification; can change over time']
+  "first season" enum
+  "last season" enum [null]
 }
 
 Table driverids {
@@ -24,9 +34,14 @@ Table driverids {
 }
 
 Table drivers {
-  id integer
+  id integer [primary key, unique, increment, note: 'Driver-name-nationality combination unique id']
+  driverid enum
   name varchar [note: 'Can change over time']
   nationality enum
+
+  indexes {
+    (id, name, nationality) [unique]
+  }
 }
 
 Table teams {
@@ -35,15 +50,40 @@ Table teams {
   founder varchar
 }
 
-Table mothers {
+Table teams_seasons {
+  season enum
+  team enum
+  "team name" enum [note: 'General name of the team in this season (not specific to any category)']
+  "team principal" varchar [note: 'Team principal in this season (if changed during season, list all with "CHANGED")']
+  "headquarters" varchar [note: 'Headquarters of the team in this season (if changed during season, list all with "CHANGED"']
+}
+
+Table motherids {
   id integer [primary key, unique, increment]
-  name varchar
-  headquarters varchar
+  "year founded" varchar
+  "place founded" varchar
+}
+
+Table mothers {
+  id enum
+  name varchar [note: 'Can change over time']
+  headquarters varchar [note: 'Can change over time']
 }
 
 Table marques {
   id integer [primary key, unique, increment]
   name varchar
+}
+
+Table marques_mothers {
+  marque enum
+  mother enum
+  "first season" varchar [note: 'First season in which this combination applies']
+  "last season" varchar [null, note: 'Last season in which this combination applies']
+
+  /*indexes {
+    (marque, mother, "first season", "last season") [unique]
+  }*/
 }
 
 Table classes {
@@ -53,8 +93,9 @@ Table classes {
 
 Table cars {
   id integer [primary key, unique, increment]
-  "chassis name" varchar
+  "chassis name" varchar [note: 'Could theoretically change over time, normally does not']
   "year built" varchar
+  notes varchar [null, note: 'Notes on whether a chassis changed owners, was destroyed, etc. (if applicable)']
 }
 
 Table seasons {
@@ -62,15 +103,16 @@ Table seasons {
 }
 
 Table tracks {
-  id integer [primary key, unique, increment]
-  name varchar
-  "long name" varchar
+  id integer [primary key, unique]
   location varchar
   lat varchar
   lon varchar
-  "time zone" enum
-  "dst start" enum
-  "dst end" enum
+}
+
+Table tracknames {
+  id integer [unique]
+  name varchar [unique]
+  "long name" varchar
 }
 
 Table trackconfigs {
@@ -82,6 +124,16 @@ Table trackconfigs {
   indexes {
     (track, id) [pk]
   }
+}
+
+Table timezones {
+  id integer [unique, increment]
+  location enum [unique]
+  "time zone" enum [note: 'Name of the time zone without DST indication']
+  "dst start" enum [null, note: 'Week in which DST starts (if applicable)']
+  "dst end" enum [null, note: 'Week in which DST ends (if applicable)']
+  "first season" enum [note: 'First season in which this combination applies']
+  "last season" enum [null, note: 'Last season in which this combination applies']
 }
 
 Table races {
@@ -111,13 +163,6 @@ Table calendar {
   "average rainfall" varchar
 }
 
-Table teams_seasons {
-  season enum
-  team enum
-  "team name" enum
-  "team principal" varchar
-}
-
 Table entries {
   season enum
   category enum
@@ -140,21 +185,10 @@ Table entries {
   "q pos" integer [null]
   "grid pos" integer [null]
   finish integer [null]
-  gap varchar [null]
+  gap varchar [null, note: 'Total race time instead of gap for winner']
 
   indexes {
     (season, category, round, carid, carno) [unique]
-  }
-}
-
-Table marques_mothers {
-  marque enum
-  mother enum
-  "first season" varchar
-  "last season" varchar [null]
-
-  indexes {
-    (marque, mother, "first season", "last season") [unique]
   }
 }
 
@@ -170,12 +204,14 @@ Table weather {
   }
 }
 
-Ref: drivers.id > driverids.id
+Ref: drivers.driverid > driverids.id
 Ref: drivers.nationality > countries.name
-Ref: countries.region > regions.name
-Ref: trackconfigs.track > tracks.name
+Ref: countryids.region > regions.name
+Ref: countries.id > countryids.id
+Ref: flags.country > countries.name
+Ref: trackconfigs.track > tracknames.name
 Ref: calendar.season > seasons.name
-Ref: calendar.category > categories.id
+Ref: calendar.category > categories.name
 Ref: calendar.race > races.id
 Ref: calendar.(track, config) > trackconfigs.(track, id)
 Ref: teams_seasons.season > seasons.name
@@ -186,8 +222,11 @@ Ref: entries.class > classes.name
 Ref: entries.marque > marques.id
 Ref: entries.team > teams_seasons."team name"
 Ref: entries.vanitynat > countries.name
-Ref: entries.driver > drivers.name
+Ref: entries.driver > drivers.id
 Ref: marques_mothers.marque > marques.id
 Ref: marques_mothers.mother > mothers.name
-Ref: weather.track > tracks.name
+Ref: weather.track > tracknames.name
 Ref: calendar.(track, date, time, "average temperature", "average rainfall") - weather.(track, date, time, "average temperature", "average rainfall")
+Ref: tracknames.id - tracks.id
+Ref: timezones.location - tracks.location
+Ref: mothers.id > motherids.id
