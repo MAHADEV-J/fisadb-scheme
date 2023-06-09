@@ -1,0 +1,156 @@
+// Use DBML to define your database structure
+// Docs: https://dbml.dbdiagram.io/docs
+
+Table regions {
+  name varchar [primary key, unique]
+}
+
+Table countries {
+  id integer [primary key, unique, increment]
+  name varchar [unique, note: 'Can change over time']
+  "short name" varchar
+  abbreviation varchar
+  anthem varchar [note: 'tla.mp3']
+  flag varchar [note: 'tla.png']
+  capital varchar
+  region enum
+}
+
+Table driverids {
+  id integer [primary key, unique, increment, note: 'Unique id']
+  "date of birth" varchar
+  "place of birth" varchar
+  sex varchar
+}
+
+Table drivers {
+  id integer
+  name varchar [note: 'Can change over time']
+  nationality enum
+}
+
+Table teams {
+  id integer [primary key, unique, increment]
+  "year founded" varchar
+  founder varchar
+}
+
+Table mothers {
+  id integer [primary key, unique, increment]
+  name varchar
+  headquarters varchar
+}
+
+Table marques {
+  id integer [primary key, unique, increment]
+  name varchar
+  mother varchar
+}
+
+Table classes {
+  name varchar [primary key, unique]
+  type varchar
+}
+
+Table cars {
+  id integer [primary key, unique, increment]
+  "chassis name" varchar
+  "year built" varchar
+}
+
+Table seasons {
+  name varchar [primary key, unique]
+}
+
+Table tracks {
+  id integer [primary key, unique, increment]
+  name varchar
+  "long name" varchar
+  location varchar
+}
+
+Table trackconfigs {
+  id integer
+  track enum
+  name varchar
+  length varchar
+
+  indexes {
+    (track, id) [pk]
+  }
+}
+
+Table races {
+  id integer [primary key, unique, increment]
+  name varchar
+}
+
+Table categories {
+  id integer [primary key, unique, increment]
+  name varchar
+  "long name" varchar
+}
+
+Table calendar {
+  season enum
+  category enum
+  round integer
+  race enum
+  track enum
+  config integer
+  length varchar
+  "double points" bool
+}
+
+Table teams_seasons {
+  season enum
+  team enum
+  "team name" enum
+  "team principal" varchar
+}
+
+Table entries {
+  season enum
+  category enum
+  round enum
+  carid enum
+  class enum
+  carno varchar
+  marque enum
+  model varchar
+  engine varchar
+  team enum
+  vanityname varchar
+  vanitynat enum
+  driver enum
+  "pq group" integer
+  "pq time" varchar
+  "q group" integer
+  "q time" varchar
+  "grid pos" integer
+  finish integer
+  gap varchar
+
+  indexes {
+    (season, category, round, carid, carno) [unique]
+  }
+}
+
+Ref: drivers.id > driverids.id
+Ref: drivers.nationality > countries.name
+Ref: countries.region > regions.name
+Ref: marques.mother > mothers.name
+Ref: trackconfigs.track > tracks.name
+Ref: calendar.season > seasons.name
+Ref: calendar.category > categories.id
+Ref: calendar.race > races.id
+Ref: calendar.(track, config) > trackconfigs.(track, id)
+Ref: teams_seasons.season > seasons.name
+Ref: teams_seasons.team > teams.id
+Ref: entries.(season, category, round) > calendar.(season, category, round)
+Ref: entries.carid > cars.id
+Ref: entries.class > classes.name
+Ref: entries.marque > marques.id
+Ref: entries.team > teams_seasons."team name"
+Ref: entries.vanitynat > countries.name
+Ref: entries.driver > drivers.name
